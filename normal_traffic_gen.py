@@ -1,13 +1,65 @@
 import random 
 import sysv_ipc
+import time
 
 
 
-def normal_traffic_gen(key):
-    mq = sysv_ipc.MessageQueue(key)
-    message = "nouveau traffic"
-    type = random.randint(3, 9)
-    mq.send(message, type=3)
-    print(type)
+
+def generate_depart_arrive(key1,key2,key3,key4):  #Return a list which has depart and arrive queue's key
+    random_list = [key1,key2,key3,key4]
+    res= [random.choice(random_list)]  # Chose an key randomly from randomlist
+    random_list.pop(random_list.index(res[0])) # Remove that key from randomlist
+    res.append(random.choice(random_list))  # Chose an key from randomlist modified
+    return res
+
+
+def one_normal_traffic_gen(key1,key2,key3,key4,queue_west, queue_south, queue_east, queue_north): #Generate un traffic, argument is an list has depart and arrive queue's key
+    direction = generate_depart_arrive(key1,key2,key3,key4)
+    periode = random.randint(0.5,5)
+    time.sleep(periode)
+    if direction[0] == key1: #Update queue
+        if 0 not in queue_west[:]:
+            return            #If there is no place available in queue, cancel the function, wait for another periode until the queue is available
+        add_to_queue(queue_west, 1)
+    elif direction[0] == key2:
+        if 0 not in queue_south[:]:
+            return
+        add_to_queue(queue_west, 1)
+    elif direction[0] == key3:
+        if 0 not in queue_east[:]:
+            return
+        add_to_queue(queue_west, 1)
+    elif direction[0] == key4:
+        if 0 not in queue_north[:]:
+            return
+    mq = sysv_ipc.MessageQueue(direction[0])
+    go_to = str(direction[1]).encode()  # Envoyer sa destination comme message
+    mq.send(go_to,type=1)
+    if direction[0] == key1:
+        add_to_queue(queue_west,1)
+    elif direction[0] == key2:
+        add_to_queue(queue_south,1)
+    elif direction[0] == key3:
+        add_to_queue(queue_east,1)
+    elif direction[0] == key4:
+        add_to_queue(queue_north,1)
     
-normal_traffic_gen(115)
+
+def add_to_queue(queue, type):   # Add the traffic to available spot in queue depart
+    while 0 not in queue[:]:
+        pass
+    i=0
+    while queue[i] != 0:   # when queue[i] = 0 then position i is available
+        i +=1
+    queue[i] = type
+def remove_from_queue(queue):  # Remove the first traffic in queue
+    for i in range(len(queue[:])-1):  # Take away the first traffic in queue, then move the second traffic to first position, do the same with third and fourth traffic
+        queue[i]=queue[i+1]
+    queue[-1] = 0    #The last position is now free
+
+def normal_traffic_gen(key1, key2, key3, key4, queue_west, queue_south, queue_east, queue_north):  #Process to generate a whole traffic system
+    while True:
+        one_normal_traffic_gen(generate_depart_arrive(key1, key2, key3, key4))
+
+if __name__ == "__main__":
+    pass
