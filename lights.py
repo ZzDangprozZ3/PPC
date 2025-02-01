@@ -7,66 +7,54 @@ from functools import partial  # Help to add an argument to handler
 
 
 
-def handler_west(sig, frame, queue_west):
+def handler_west(sig, frame, queue_west, light):
     print("Received SIGUSR1!")
-    global light
     memory = Array('i', light[:])   # Remember the light's situation before priority traffic's light change
     light[:] = [1,0,0,0]
-    print(light[:])
     while 2 in queue_west:  # Wait until priority traffic dissapear
         time.sleep(2)  # Saving CPU from woking 100%
     light[:] = memory[:]            # Return the light's situation from beginning
         
 
-def handler_south(sig, frame, queue_south): 
-    print("Received SIGUSR2!")
-    global light   
+def handler_south(sig, frame, queue_south, light): 
+    print("Received SIGUSR2!") 
     memory = Array('i', light[:])                    
     light[:] = [0,1,0,0]
-    print(light[:])
     while 2 in queue_south:  
         time.sleep(2)
     light[:] = memory[:]
 
-def handler_east(sig, frame, queue_east):
-    print("Received SIGRTMIN!")    
-    global light   
+def handler_east(sig, frame, queue_east, light):
+    print("Received SIGRTMIN!")     
     memory = Array('i', light[:])                   
     light[:] = [0,0,1,0]
-    print(light[:])
     while 2 in queue_east:  
         time.sleep(2)  
     light[:] = memory[:]
 
-def handler_north(sig, frame, queue_north):  
-    print("Received SIGRTMAX!") 
-    global light   
+def handler_north(sig, frame, queue_north, light):  
+    print("Received SIGRTMAX!")  
     memory = Array('i', light[:])                   
     light[:] = [0,0,0,1]
-    print(light[:])
     while 2 in queue_north:  
         time.sleep(2)
     light[:] = memory[:]
-    print(f"light after change:{light[:]}")
+    
 
     
-def Lights(handler_west,handler_south,handler_east,handler_north, queue_west, queue_south, queue_east, queue_north, PID_Lights): 
+def Lights(handler_west,handler_south,handler_east,handler_north, queue_west, queue_south, queue_east, queue_north, PID_Lights,light): 
     PID_Lights.value = os.getpid()
-    global light 
-    light = []
-    light1 = Array('i', [1,0,1,0]) # Consider that 1 = Green Light and 0 = Red Light. From left to right : West, South, East, North
-    light2 = Array('i', [0,1,0,1])
+    light1 = [1,0,1,0] # Consider that 1 = Green Light and 0 = Red Light. From left to right : West, South, East, North
+    light2 = [0,1,0,1]
     while True:  # The light change for each 3 seconds
-        signal.signal(signal.SIGUSR1, partial(handler_west,queue_west=queue_west))   # React when we have an priority traffic in any queue 
-        signal.signal(signal.SIGUSR2, partial(handler_south, queue_south=queue_south))  
-        signal.signal(signal.SIGRTMIN, partial(handler_east, queue_east=queue_east))
-        signal.signal(signal.SIGRTMAX, partial(handler_north, queue_north=queue_north))
-        light = light1
-        print(light[:])
-        time.sleep(3)
-        light = light2
-        print(light[:])
-        time.sleep(3)     
+        signal.signal(signal.SIGUSR1, partial(handler_west,queue_west=queue_west, light= light))   # React when we have an priority traffic in any queue 
+        signal.signal(signal.SIGUSR2, partial(handler_south, queue_south=queue_south, light = light))  
+        signal.signal(signal.SIGRTMIN, partial(handler_east, queue_east=queue_east, light = light))
+        signal.signal(signal.SIGRTMAX, partial(handler_north, queue_north=queue_north, light = light))
+        light[:] = light1
+        time.sleep(5)
+        light[:] = light2
+        time.sleep(5)     
 
 
 if __name__ == "__main__":
