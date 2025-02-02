@@ -19,29 +19,29 @@ def normal_traffic_gen(key1,key2,key3,key4,queue_west, queue_south, queue_east, 
         periode = random.randint(1,6)
         time.sleep(periode)
         if direction[0] == key1: #Update queue
-            if 0 not in queue_west[:]:
-                return            #If there is no place available in queue, cancel the function, wait for another periode until the queue is available
+            if queue_west[-1]:
+                continue            #If there is no place available in queue, cancel the function, wait for another periode until the queue is available
             add_to_queue(queue_west, 1)
         elif direction[0] == key2:
-            if 0 not in queue_south[:]:
-                return
+            if queue_south[-1]:
+                continue
             add_to_queue(queue_south, 1)
         elif direction[0] == key3:
-            if 0 not in queue_east[:]:
-                return
+            if queue_east[-1]:
+                continue
             add_to_queue(queue_east, 1)
         elif direction[0] == key4:
-            if 0 not in queue_north[:]:
-                return   
+            if queue_north[-1]:
+                continue
             add_to_queue(queue_north, 1)         
         mq = sysv_ipc.MessageQueue(direction[0])
         go_to = str(direction[1]).encode()  # Envoyer sa key destination comme message
-        mq.send(go_to,type=1)
+        mq.send(go_to, type=1)
     
 
 def add_to_queue(queue, type):   # Add the traffic to available spot in queue depart
-    while 0 not in queue[:]:
-        pass
+    # while 0 not in queue[:]:
+    #     pass
     queue[-1] = type     # Add the traffic to the last position of queue
 
 

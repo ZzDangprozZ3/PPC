@@ -2,9 +2,11 @@ from multiprocessing import Process, Array, Value
 import os
 import sysv_ipc
 import time
+import socket
 from lights import handler_east,handler_north,handler_south,handler_west,Lights
 from normal_traffic_gen import normal_traffic_gen, remove_from_queue
 from priority_traffic_gen import priority_traffic_gen
+from threading import Thread
 
 
 
@@ -79,10 +81,95 @@ def circulation(key_west,key_south,key_east, key_north, queue_west_in, queue_wes
             remove_from_queue(queue_north_out)
     
     
-        
-def coordinator(key_west, key_south, key_east, key_north):
+
+def coordinator_socket(host, port, change, queue_west, queue_west_out, queue_south, queue_south_out, queue_east, queue_east_out, queue_north, queue_north_out, lights):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+        client_socket.connect((host, port))
+        current = 1
+        while True:
+            if current != change.value:
+                current = change.value
+                msg = ""
+                for i in range(4):
+                    if queue_north_out[i] == 1:
+                        msg += "gray "
+                    elif queue_north_out[i] == 2:
+                        msg += "red "
+                    else:
+                        msg += "None "
+                #################################
+                for i in range(4):
+                    if queue_north[3-i] == 1:
+                        msg += "gray "
+                    elif queue_north[3-i] == 2:
+                        msg += "red "
+                    else:
+                        msg += "None "
+                ######################################
+                for i in range(4):
+                    if queue_south_out[i] == 1:
+                        msg += "gray "
+                    elif queue_south_out[i] == 2:
+                        msg += "red "
+                    else:
+                        msg += "None "
+                #################################
+                for i in range(4):
+                    if queue_south[3-i] == 1:
+                        msg += "gray "
+                    elif queue_south[3-i] == 2:
+                        msg += "red "
+                    else:
+                        msg += "None "
+                #################################
+                for i in range(4):
+                    if queue_east_out[i] == 1:
+                        msg += "gray "
+                    elif queue_east_out[i] == 2:
+                        msg += "red "
+                    else:
+                        msg += "None "
+                #################################
+                for i in range(4):
+                    if queue_east[3-i] == 1:
+                        msg += "gray "
+                    elif queue_east[3-i] == 2:
+                        msg += "red "
+                    else:
+                        msg += "None "
+                ###################################
+                for i in range(4):
+                    if queue_west_out[i] == 1:
+                        msg += "gray "
+                    elif queue_west_out[i] == 2:
+                        msg += "red "
+                    else:
+                        msg += "None "
+                #################################
+                for i in range(4):
+                    if queue_west[3-i] == 1:
+                        msg += "gray "
+                    elif queue_west[3-i] == 2:
+                        msg += "red "
+                    else:
+                        msg += "None "
+                ###################################
+                for i in range(4):
+                    if lights[i] == 1:
+                        msg += "red "
+                    else:
+                        msg += "green "
+                print(msg)
+
+                client_socket.sendall(msg.encode())
+
+
+
+
+def coordinator(key_west, key_south, key_east, key_north, host, port):
     light = Array('i',[1,0,1,0])    # Red light 1 and green light 0 shared memory
     PID_Lights = Value('i', 0)             # Create shared memories PID of Lights Process to share with Traffic Generate
+    change = Value('i', 0)
     mq_west = sysv_ipc.MessageQueue(key_west, sysv_ipc.IPC_CREAT)    # Create 4 queue 
     mq_south = sysv_ipc.MessageQueue(key_south, sysv_ipc.IPC_CREAT)      
     mq_east = sysv_ipc.MessageQueue(key_east, sysv_ipc.IPC_CREAT)
@@ -99,10 +186,12 @@ def coordinator(key_west, key_south, key_east, key_north):
     normal_traffic_process = Process(target=normal_traffic_gen, args=(key_west, key_south, key_east, key_north,queue_west,queue_south,queue_east,queue_north))
     priority_traffic_process = Process(target=priority_traffic_gen, args=(key_west, key_south, key_east, key_north,queue_west,queue_south,queue_east,queue_north,PID_Lights))
     circulation_process = Process(target=circulation, args=(key_west, key_south, key_east, key_north,queue_west,queue_west_out,queue_south,queue_south_out,queue_east,queue_east_out,queue_north,queue_north_out,light))
+    socket_thread = Thread(target=coordinator_socket, args=(host, port, change, queue_west, queue_west_out, queue_south, queue_south_out, queue_east, queue_east_out, queue_north, queue_north_out, light))
     lights_process.start()
     normal_traffic_process.start()
     priority_traffic_process.start()
     circulation_process.start()
+    socket_thread.start()
     while True:
         time.sleep(1)
         print(light[:])
@@ -114,6 +203,13 @@ def coordinator(key_west, key_south, key_east, key_north):
         print(f"queue_south_out : {queue_west_out[:]}")
         print(f"queue_east_out : {queue_east_out[:]}")
         print(f"queue_north_out: {queue_north_out[:]}")
+        change.value = (change.value + 1) % 2
+
+    lights_process.join()
+    normal_traffic_process.join()
+    priority_traffic_process.join()
+    circulation_process.join()
+    socket_thread.join()
             
     
         
