@@ -3,9 +3,10 @@ import coordinator
 import lights
 import normal_traffic_gen
 import priority_traffic_gen
-from multiprocessing import Process, Lock
+from multiprocessing import Process, Event
 import time
 
+event = Event()
 
 
 KEYWEST = 1
@@ -23,10 +24,10 @@ BACKGROUND = "lightblue"
 # Main
 
 ## Processes
-coordinator_p = Process(target=coordinator.coordinator, args=(KEYWEST, KEYSOUTH, KEYEAST, KEYNORTH, HOST, PORT))
-display_p = Process(target=display.display, args=(WIDTH, HEIGTH, BACKGROUND, HOST, PORT))
+coordinator_p = Process(target=coordinator.coordinator, args=(KEYWEST, KEYSOUTH, KEYEAST, KEYNORTH, HOST, PORT, event))
+display_p = Process(target=display.display, args=(WIDTH, HEIGTH, BACKGROUND, HOST, PORT, event))
 display_p.start()
-time.sleep(3)
+# time.sleep(3)
 coordinator_p.start()
 coordinator_p.join()
 display_p.join()

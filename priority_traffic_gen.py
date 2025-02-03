@@ -7,9 +7,9 @@ import random
 
 def priority_traffic_gen(key1,key2,key3,key4, queue_west, queue_south, queue_east, queue_north, PID_Lights): # Generate an priority traffic, arguments are an list has depart and arrive queue's key and PID of process Lights
     while True:    
-        direction = generate_depart_arrive(key1,key2,key3,key4)
-        frequence = random.randint(10,15) 
+        frequence = random.randint(10,15) * 3
         time.sleep(frequence)
+        direction = generate_depart_arrive(key1,key2,key3,key4)
         if direction[0] == key1: #Update queue
             if queue_west[-1]:
                 continue          #If there is no place available in queue, cancel the function, wait for another periode until the queue is available

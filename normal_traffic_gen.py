@@ -13,27 +13,32 @@ def generate_depart_arrive(key1,key2,key3,key4):  #Return a list which has depar
     return res
 
 
-def normal_traffic_gen(key1,key2,key3,key4,queue_west, queue_south, queue_east, queue_north): #Generate un traffic, argument is an list has depart and arrive queue's key
+def normal_traffic_gen(key1, key2, key3, key4, queue_west, queue_south, queue_east, queue_north): #Generate un traffic, argument is an list has depart and arrive queue's key
     while True:    
-        direction = generate_depart_arrive(key1,key2,key3,key4)
-        periode = random.randint(1,6)
+        periode = random.randint(1,6) * 5
         time.sleep(periode)
+        direction = generate_depart_arrive(key1,key2,key3,key4)
+        print(direction)
         if direction[0] == key1: #Update queue
             if queue_west[-1]:
                 continue            #If there is no place available in queue, cancel the function, wait for another periode until the queue is available
             add_to_queue(queue_west, 1)
+            print(f"queuewestmodified:{queue_west[:]}")
         elif direction[0] == key2:
             if queue_south[-1]:
                 continue
             add_to_queue(queue_south, 1)
+            print(f"queuesouthmodified:{queue_south[:]}")
         elif direction[0] == key3:
             if queue_east[-1]:
                 continue
             add_to_queue(queue_east, 1)
+            print(f"queueeastmodified:{queue_east[:]}")
         elif direction[0] == key4:
             if queue_north[-1]:
                 continue
-            add_to_queue(queue_north, 1)         
+            add_to_queue(queue_north, 1)    
+            print(f"queuenorthmodified:{queue_north[:]}")     
         mq = sysv_ipc.MessageQueue(direction[0])
         go_to = str(direction[1]).encode()  # Envoyer sa key destination comme message
         mq.send(go_to, type=1)

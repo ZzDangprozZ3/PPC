@@ -4,14 +4,15 @@ from multiprocessing import Array
 from threading import Thread
 from ctypes import c_wchar_p
 
-def display_socket(host, port, north_left, north_right, south_left, south_right, east_left, east_right, west_left, west_right, lights):
+def display_socket(host, port, north_left, north_right, south_left, south_right, east_left, east_right, west_left, west_right, lights, event):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind((host, port))
         server_socket.listen(1)
+        event.set() 
         client_socket, address = server_socket.accept()
         with client_socket:
             while True:
-                data = client_socket.recv(2048)
+                data = client_socket.recv(1024)
                 if not len(data):
                     break
                 cars = data.decode().split()
@@ -25,12 +26,11 @@ def display_socket(host, port, north_left, north_right, south_left, south_right,
                     west_left[i] = cars[24+i]
                     west_right[i] = cars[28+i]
                     lights[i] = cars[32+i]
-                    print(lights[:])
 
     
 
 
-def display(width, heigth, background, host, port):
+def display(width, heigth, background, host, port, event):
     north_left = Array(c_wchar_p, 4)
     north_right = Array(c_wchar_p, 4)
     south_left = Array(c_wchar_p, 4)
@@ -41,30 +41,7 @@ def display(width, heigth, background, host, port):
     west_right = Array(c_wchar_p, 4)
     lights = Array(c_wchar_p, 4)
     running = True
-    # north_left[0] = "red"
-    # north_left[1] = "blue"
-    # north_left[2] = "green"
-
-    # south_left[0] = "red"
-    # south_left[1] = "blue"
-    # south_left[2] = "green"
-    # south_left[3] = "purple"
-
-
-    # east_left[0] = "red"
-    # east_left[1] = "blue"
-    # east_left[2] = "green"
-
-    # east_right[0] = "red"
-    # east_right[1] = "blue"
-    # east_right[2] = "green"
-
-    # west_left[0] = "red"
-    # west_left[1] = "blue"
-    # west_left[2] = "green"
-
-    # lights[0] = 1
-    socket_thread = Thread(target=display_socket, args=(host, port, north_left, north_right, south_left, south_right, east_left, east_right, west_left, west_right, lights))
+    socket_thread = Thread(target=display_socket, args=(host, port, north_left, north_right, south_left, south_right, east_left, east_right, west_left, west_right, lights, event))
     socket_thread.start()
     ##########################
 
@@ -131,6 +108,8 @@ def display(width, heigth, background, host, port):
 
         e_w_line = pygame.draw.line(screen, "white", (0, e_w_center), (width, e_w_center), width=line_width)
         n_s_line = pygame.draw.line(screen, "white", (n_s_center, 0), (n_s_center, heigth), width=line_width)
+        ###
+        pygame.draw.rect(screen, "black", pygame.Rect((width - road_width) // 2, (heigth - road_width) // 2, road_width, road_width))
 
         for i in range(4):
             if north_left[i] != "None" and north_left[i]:
